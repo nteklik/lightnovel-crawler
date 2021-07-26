@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 from PyInstaller import __main__ as pyi
-from setuptools.config import read_configuration
 
 ROOT = Path(__file__).parent
 unix_root = '/'.join(str(ROOT).split(os.sep))
@@ -66,7 +65,7 @@ def gather_data_files():
         unix_site_packages, os.pathsep)
     command += '--add-data "%s/cairocffi/VERSION%scairocffi" ' % (
         unix_site_packages, os.pathsep)
-    #command += '--add-data "%s/tinycss2/VERSION%stinycss2" ' % (
+    # command += '--add-data "%s/tinycss2/VERSION%stinycss2" ' % (
     #    unix_site_packages, os.pathsep)
     command += '--add-data "%s/text_unidecode/data.bin%stext_unidecode" ' % (
         unix_site_packages, os.pathsep)
