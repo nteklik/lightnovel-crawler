@@ -10,7 +10,6 @@ from telegram.ext import (CommandHandler, ConversationHandler, Filters,
                           MessageHandler, Updater)
 
 from ..core.app import App
-from ..sources import crawler_list
 from ..utils.uploader import upload
 
 logger = logging.getLogger(__name__)
@@ -28,7 +27,7 @@ available_formats = [
 class TelegramBot:
     def start(self):
         os.environ['debug_mode'] = 'yes'
-        
+
         # Create the EventHandler and pass it your bot's token.
         self.updater = Updater(
             os.getenv('TELEGRAM_TOKEN', ''),
@@ -200,8 +199,8 @@ class TelegramBot:
             except Exception:
                 update.message.reply_text(
                     'Sorry! I only recognize these sources:\n' +
-                    'https://github.com/dipu-bd/lightnovel-crawler#c3-supported-sources'
-                )  # '\n'.join(['- %s' % x for x in crawler_list.keys()]))
+                    'https://github.com/dipu-bd/lightnovel-crawler#supported-sources'
+                )
                 update.message.reply_text(
                     'Enter something again or send /cancel to stop.')
                 return 'handle_novel_url'

@@ -5,7 +5,6 @@ import textwrap
 from colorama import Back, Fore, Style
 
 from ..assets.icons import Icons
-from ..sources import crawler_list
 
 LINE_SIZE = 80
 ENABLE_BANNER = not Icons.isWindows
@@ -119,6 +118,7 @@ def new_version_news(latest):
 
 
 def url_supported_list():
+    from .sources import crawler_list
     print('List of %d supported sources:' % len(crawler_list))
     for url in sorted(crawler_list.keys()):
         print(Fore.LIGHTGREEN_EX, Icons.RIGHT_ARROW, url, Fore.RESET)
@@ -133,11 +133,11 @@ def url_not_recognized():
     print()
     print('Find the list of supported/rejected sources here:')
     print(Fore.CYAN, Icons.LINK,
-          'https://github.com/dipu-bd/lightnovel-crawler#c3-supported-sources', Fore.RESET)
+          'https://github.com/dipu-bd/lightnovel-crawler#supported-sources', Fore.RESET)
     print()
-    print('You can request developers to add support for this site here:')
-    print(Fore.CYAN, Icons.LINK,
-          'https://github.com/dipu-bd/lightnovel-crawler/issues', Fore.RESET)
+    # print('You can request developers to add support for this site here:')
+    # print(Fore.CYAN, Icons.LINK,
+    #       'https://github.com/dipu-bd/lightnovel-crawler/issues', Fore.RESET)
 # end def
 
 
@@ -160,7 +160,7 @@ def format_short_info_of_novel(short_info):
     return '\n'.join(textwrap.wrap(
         short_info.strip(),
         width=70,
-        initial_indent='\n' + (' ' * 6) + Icons.INFO,
+        initial_indent='\n' + (' ' * 6) + Icons.INFO + ' ',
         subsequent_indent=(' ' * 8),
         drop_whitespace=True,
         break_long_words=True,

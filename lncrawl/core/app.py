@@ -5,13 +5,13 @@ import shutil
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
+from lncrawl.core.crawler import Crawler
 from slugify import slugify
 
 from .. import constants as C
 from ..binders import available_formats, generate_books
-from ..sources import crawler_list
-from lncrawl.core.crawler import Crawler
-from .downloader import download_chapters, download_chapter_images
+from ..core.sources import crawler_list, rejected_sources
+from .downloader import download_chapter_images, download_chapters
 from .novel_info import format_novel, save_metadata
 from .novel_search import search_novels
 
@@ -34,7 +34,7 @@ class App:
         self.book_cover = None
         self.output_formats: Dict[str, bool] = {}
         self.archived_outputs = None
-        self.good_file_name: Optional[str] = None
+        self.good_file_name: str = ''
         self.no_append_after_filename = False
     # end def
 
@@ -93,24 +93,25 @@ class App:
     # ----------------------------------------------------------------------- #
 
     def init_crawler(self, novel_url):
-        '''Requires: [user_input]'''
-        '''Produces: crawler'''
         if not novel_url:
             return
         # end if
-        hostname = urlparse(novel_url).hostname
-        for home_url, create_crawler in crawler_list.items():
-            if hostname == urlparse(home_url).hostname:
-                logger.info('Initializing crawler for: %s', home_url)
-                self.crawler: Crawler = create_crawler()
-                self.crawler.novel_url = novel_url
-                self.crawler.home_url = home_url.strip('/')
-                break
-            # end if
-        # end for
-        if not self.crawler:
-            raise Exception('No crawlers were found')
+
+        parsed_url = urlparse(novel_url)
+        base_url = '%s://%s/' % (parsed_url.scheme, parsed_url.hostname)
+        if base_url in rejected_sources:
+            raise Exception('Source is rejected. Reason: ' + rejected_sources[base_url])
         # end if
+
+        CrawlerType = crawler_list.get(base_url)
+        if not CrawlerType:
+            raise Exception('No crawler found for ' + base_url)
+        # end if
+
+        logger.info('Initializing crawler for: %s', base_url)
+        self.crawler = CrawlerType()
+        self.crawler.home_url = base_url
+        self.crawler.novel_url = novel_url
     # end def
 
     def can_do(self, prop_name):
@@ -125,7 +126,7 @@ class App:
 
         self.crawler.initialize()
         self.crawler.scraper.headers['origin'] = self.crawler.home_url
-        self.crawler.scraper.headers['referer'] = self.crawler.home_url + '/'
+        self.crawler.scraper.headers['referer'] = self.crawler.home_url
 
         if self.can_do('login') and self.login_data:
             logger.debug('Login with %s', self.login_data)
@@ -162,6 +163,8 @@ class App:
             raise Exception('Output path is not defined')
         # end if
 
+        assert self.crawler
+
         save_metadata(self)
         download_chapters(self)
         save_metadata(self)
@@ -182,6 +185,8 @@ class App:
     def bind_books(self):
         '''Requires: crawler, chapters, output_path, pack_by_volume, book_cover, output_formats'''
         logger.info('Processing data for binding')
+        assert self.crawler
+
         data = {}
         if self.pack_by_volume:
             for vol in self.crawler.volumes:

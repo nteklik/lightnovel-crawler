@@ -7,6 +7,7 @@ import logging
 import random
 import re
 import sys
+from typing import Dict, List
 import unicodedata
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -29,7 +30,7 @@ NONPRINTABLE = itertools.chain(range(0x00, 0x20), range(0x7f, 0xa0), INVISIBLE_C
 NONPRINTABLE_MAPPING = {character: None for character in NONPRINTABLE}
 
 
-class Crawler:
+class Crawler(object):
     '''Blueprint for creating new crawlers'''
 
     def __init__(self) -> None:
@@ -97,7 +98,7 @@ class Crawler:
     # end def
 
     @abstractmethod
-    def search_novel(self, query):
+    def search_novel(self, query) -> List[Dict[str, str]]:
         '''Gets a list of results matching the given query'''
         pass
     # end def
@@ -181,7 +182,14 @@ class Crawler:
                 and url.path.startswith(page.path))
     # end def
 
-    def __process_response(self, response) -> Response:
+    def __process_response(self, response: Response) -> Response:
+        if response.status_code == 403 and response.reason == 'Forbidden':
+            raise Exception('403 Forbidden! Could not bypass the cloudflare protection.\n'
+                            '  If you are running from your own computer, visit the link on your browser and try again later.\n'
+                            '  Sometimes, using `http` instead of `https` link may work.')
+            print('>'*10, response.status_code, response.reason)
+            return response
+
         response.raise_for_status()
         response.encoding = 'utf8'
         self.cookies.update({

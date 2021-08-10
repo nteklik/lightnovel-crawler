@@ -11,8 +11,8 @@ RD /S /Q "dist" "venv" "build" "lightnovel_crawler.egg-info" &
 CALL venv\Scripts\activate.bat
 
 %PIP% install -U pip wheel setuptools
+%PIP% install -r requirements-dev.txt
 %PIP% install -r requirements-app.txt
-%PIP% install pyinstaller pycryptodome>=3.0.0,<4.0.0
 
 %PY% setup.py clean bdist_wheel package
 

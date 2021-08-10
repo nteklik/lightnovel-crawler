@@ -5,15 +5,16 @@ Interactive application to take user inputs
 import logging
 import os
 import sys
+
 import colorama
 from colorama import Fore
 
 from ..assets.version import get_value as get_version
 from ..bots import run_bot
-from ..utils.update_checker import check_updates
 from .arguments import get_args
 from .display import (cancel_method, debug_mode, description, epilog,
                       error_message, input_suppression)
+from .sources import load_sources
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +66,7 @@ def init():
 def start_app():
     init()
 
-    check_updates()
+    load_sources()
     cancel_method()
 
     try:
@@ -74,7 +75,7 @@ def start_app():
     except Exception as err:
         if os.getenv('debug_mode') == 'yes':
             raise err
-        else:
+        elif not isinstance(err, KeyError):
             error_message(err)
         # end if
     # end try
@@ -82,6 +83,10 @@ def start_app():
     epilog()
 
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        input('Press ENTER to exit...')
+        try:
+            input('Press ENTER to exit...')
+        except EOFError:
+            pass
+        # end try
     # end if
 # end def
