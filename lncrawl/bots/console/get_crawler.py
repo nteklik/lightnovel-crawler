@@ -6,6 +6,7 @@ from questionary import prompt
 
 from ...core import display
 from ...core.arguments import get_args
+from ...core.exeptions import LNException
 
 
 def get_novel_url(self):
@@ -20,13 +21,13 @@ def get_novel_url(self):
         if re.match(r'^https?://.+\..+$', url):
             return url
         else:
-            raise Exception('Invalid URL of novel page')
+            raise LNException('Invalid URL of novel page')
         # end if
     # end if
 
     try:
         if args.suppress:
-            raise Exception()
+            raise LNException()
         # end if
 
         answer = prompt([
@@ -39,7 +40,7 @@ def get_novel_url(self):
         ])
         return answer['novel'].strip()
     except Exception:
-        raise Exception('Novel page url or query was not given')
+        raise LNException('Novel page url or query was not given')
     # end try
 # end def
 
@@ -119,3 +120,23 @@ def choose_a_novel(self):
 
     return selected_novel['url']
 # end def
+
+def confirm_retry(self) -> bool:
+    '''Returns whether to retry on failure'''
+    args = get_args()
+
+    if args.suppress:
+        return False
+    # end if
+
+    answer = prompt([
+        {
+            'type': 'confirm',
+            'name': 'retry',
+            'message': 'Do you want to choose another novel?',
+            'default': True
+        },
+    ])
+
+    return answer['retry']
+# end if

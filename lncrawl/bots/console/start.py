@@ -7,6 +7,7 @@ from questionary import prompt
 from ...core import display
 from ...core.app import App
 from ...core.arguments import get_args
+from ...core.exeptions import LNException
 from ...core.sources import rejected_sources
 from .open_folder_prompt import display_open_folder
 from .resume_download import resume_session
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 def start(self):
     from . import ConsoleBot
     if not isinstance(self, ConsoleBot):
-        raise Exception('Unknown self: ' + type(self))
+        raise LNException('Unknown self: ' + type(self))
 
     args = get_args()
     if args.list_sources:
@@ -39,7 +40,8 @@ def start(self):
     # Process user input
     self.app.user_input = self.get_novel_url()
     try:
-        self.app.init_search()
+        self.app.prepare_search()
+        self.search_mode = not self.app.crawler
     except Exception as e:
         logger.debug("Fail to init crawler. Error: %s", e)
         if self.app.user_input.startswith('http'):
@@ -54,27 +56,46 @@ def start(self):
         return
     # end if
 
-    # Search novel and initialize crawler
-    if not self.app.crawler:
+    # Search for novels
+    if self.search_mode:
         self.app.crawler_links = self.get_crawlers_to_search()
         self.app.search_novel()
-
-        novel_url = self.choose_a_novel()
-        self.log.info('Selected novel: %s' % novel_url)
-        self.app.init_crawler(novel_url)
     # end if
 
-    if self.app.can_do('login'):
-        self.app.login_data = self.get_login_info()
-    # end if
+    def _download_novel():
+        assert isinstance(self.app, App)
 
-    self.app.get_novel_info()
+        if self.search_mode:
+            novel_url = self.choose_a_novel()
+            self.log.info('Selected novel: %s' % novel_url)
+            self.app.prepare_crawler(novel_url)
+        # end if
 
-    self.app.output_path = self.get_output_path()
-    self.app.chapters = self.process_chapter_range()
+        if self.app.can_do('login'):
+            self.app.login_data = self.get_login_info()
+        # end if
 
-    self.app.output_formats = self.get_output_formats()
-    self.app.pack_by_volume = self.should_pack_by_volume()
+        self.app.get_novel_info()
+
+        self.app.output_path = self.get_output_path()
+        self.app.chapters = self.process_chapter_range()
+
+        self.app.output_formats = self.get_output_formats()
+        self.app.pack_by_volume = self.should_pack_by_volume()
+    # end def
+
+    while True:
+        try:
+            _download_novel()
+            break
+        except KeyboardInterrupt as e:
+            raise LNException('Cancelled by user')
+        except Exception as e:
+            if not (self.search_mode and self.confirm_retry()):
+                raise e
+            # end if
+        # end try
+    # end while
 
     self.app.start_download()
     self.app.bind_books()
@@ -121,7 +142,7 @@ def process_chapter_range(self):
     # end if
 
     if len(chapters) == 0:
-        raise Exception('No chapters to download')
+        raise LNException('No chapters to download')
     # end if
 
     self.log.debug('Selected chapters:')
